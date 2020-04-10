@@ -2,6 +2,7 @@ package com.adrian.springsecuritypodstawy.configurations;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.core.userdetails.User;
@@ -27,18 +28,28 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .roles("ADMIN")
                 .build();
 
-        return new InMemoryUserDetailsManager(user, admin);
+        UserDetails moderator = User.withDefaultPasswordEncoder()
+                .username("moderator")
+                .password("moderator")
+                .roles("MODERATOR")
+                .build();
+
+        return new InMemoryUserDetailsManager(user, admin, moderator);
     }
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
 
-        http.authorizeRequests()
-                .antMatchers("/hello").permitAll()
+        http.httpBasic().and().authorizeRequests()
+                .antMatchers(HttpMethod.GET, "/all").permitAll()
+                .antMatchers(HttpMethod.POST, "/add").hasRole("MODERATOR")
+                .antMatchers(HttpMethod.DELETE, "/delete").hasRole("ADMIN")
                 .anyRequest().hasRole("ADMIN")
                 .and()
                 .formLogin().permitAll()
                 .and()
-                .logout().permitAll();
+                .logout().permitAll()
+                .and()
+                .csrf().disable();
     }
 }
